@@ -31,5 +31,8 @@ msbuild.wrn
 # Visual Studio 2015
 .vs/
 
+#CodeCoverage
+*.coverage
+
 #Nuget Config, contains private token information
 nuget.config

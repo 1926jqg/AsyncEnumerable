@@ -11,21 +11,23 @@ namespace AsyncEnumerable.Tests
     public class LinqTests
     {
 
+        private const int millisecondMultiplier = 100;
+
         private Task<int>[] GetTasks()
         {
             return new[] {
-                Task.Delay(3000).ContinueWith(_ => 3),
-                Task.Delay(1000).ContinueWith(_ => 1),
-                Task.Delay(2000).ContinueWith(_ => 2),
-                Task.Delay(5000).ContinueWith(_ => 5),
-                Task.Delay(4000).ContinueWith(_ => 4),
+                Task.Delay(3 * millisecondMultiplier).ContinueWith(_ => 3),
+                Task.Delay(1 * millisecondMultiplier).ContinueWith(_ => 1),
+                Task.Delay(2 * millisecondMultiplier).ContinueWith(_ => 2),
+                Task.Delay(5 * millisecondMultiplier).ContinueWith(_ => 5),
+                Task.Delay(4 * millisecondMultiplier).ContinueWith(_ => 4),
             };
         }
 
         [Fact]
         public async Task TestSelectAsync()
         {
-            int maxMilliseconds = 5 * 1000;
+            int maxMilliseconds = 5 * millisecondMultiplier;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
@@ -44,7 +46,7 @@ namespace AsyncEnumerable.Tests
         [Fact]
         public async Task TestWhereAsync()
         {
-            int maxMilliseconds = 5 * 1000;
+            int maxMilliseconds = 5 * millisecondMultiplier;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
@@ -60,7 +62,7 @@ namespace AsyncEnumerable.Tests
             watch.Stop();
             Assert.Equal(3, processed);
             Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
-            Assert.True(lastTrue <= 3 * 1000 + 100);
+            Assert.True(lastTrue <= 3 * millisecondMultiplier + 100);
         }
 
         [Theory]
@@ -73,7 +75,7 @@ namespace AsyncEnumerable.Tests
         [InlineData(6)]
         public async Task TestTakeAsync(int take)
         {
-            int maxMilliseconds = take * 1000;
+            int maxMilliseconds = take * millisecondMultiplier;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
@@ -92,7 +94,7 @@ namespace AsyncEnumerable.Tests
         [Fact]
         public async Task TestFirstOrDefault()
         {
-            int maxMilliseconds = 1 * 1000;
+            int maxMilliseconds = 1 * millisecondMultiplier;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
@@ -103,7 +105,17 @@ namespace AsyncEnumerable.Tests
             Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
         }
 
+        [Fact]
+        public async Task TestFirstOrDefaultEmpty()
+        {
+            var tasks = new Task<int>[0];
+
+            var result = await tasks.FirstOrDefaultAsync();
+            Assert.Equal(default, result);
+        }
+
         [Theory]
+        [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -116,12 +128,12 @@ namespace AsyncEnumerable.Tests
             int expected;
             if (comparison >= 1 && comparison <= 5)
             {
-                maxMilliseconds = comparison * 1000;
+                maxMilliseconds = comparison * millisecondMultiplier;
                 expected = comparison;
             }
             else
             {
-                maxMilliseconds = 5 * 1000;
+                maxMilliseconds = 5 * millisecondMultiplier;
                 expected = default;
             }
             var watch = Stopwatch.StartNew();
@@ -137,7 +149,7 @@ namespace AsyncEnumerable.Tests
         [Fact]
         public async Task TestTakeWhileAsync()
         {
-            int maxMilliseconds = 4 * 1000;
+            int maxMilliseconds = 4 * millisecondMultiplier;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
@@ -153,7 +165,7 @@ namespace AsyncEnumerable.Tests
             watch.Stop();
             Assert.Equal(3, processed);
             Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
-            Assert.True(lastTrue <= 3 * 1000 + 100);
+            Assert.True(lastTrue <= 3 * millisecondMultiplier + 100);
         }
     }
 }
