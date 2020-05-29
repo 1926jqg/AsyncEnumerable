@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <PackageId>AsyncEnumerable</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Jacob Glad</Authors>
+    <PackageDescription>.Net Core 3 library providing utilities surrounding IEnumerables of Tasks</PackageDescription>
+    <RepositoryUrl>https://github.com/1926jqg/AsyncEnumerable</RepositoryUrl>
   </PropertyGroup>
 
 </Project>
