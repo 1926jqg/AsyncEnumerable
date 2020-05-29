@@ -1,5 +1,4 @@
 ﻿using AsyncEnumerable.Collections;
-using AsyncEnumerable.LINQAsync.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,19 +21,10 @@ namespace AsyncEnumerable.LINQAsync
             [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            var boolTasks = tasks
-                .Select(t => t.ContinueWith(async t => new PredicateResult<T>
-                {
-                    Match = predicate(await t),
-                    Value = await t
-                },
-                cancellationToken,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default).Unwrap());
-            await foreach (var task in boolTasks.ReturnWhenComplete())
+            await foreach (var task in tasks.ReturnWhenComplete())
             {
-                if (task.Match)
-                    yield return task.Value;
+                if (predicate(task))
+                    yield return task;
             }
         }
 
@@ -94,19 +84,10 @@ namespace AsyncEnumerable.LINQAsync
             [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            var boolTasks = tasks
-                .Select(t => t.ContinueWith(async t => new PredicateResult<T>
-                {
-                    Match = predicate(await t),
-                    Value = await t
-                },
-                cancellationToken,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default).Unwrap());
-            await foreach (var task in boolTasks.ReturnWhenComplete())
+            await foreach (var value in tasks.ReturnWhenComplete())
             {
-                if (task.Match)
-                    yield return task.Value;
+                if (predicate(value))
+                    yield return value;
                 else
                     yield break;
             }
