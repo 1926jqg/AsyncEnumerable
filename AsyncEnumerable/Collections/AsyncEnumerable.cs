@@ -27,7 +27,7 @@ namespace AsyncEnumerable.Collections
             private bool _isDisposed = false;
             private readonly int _totalCount = 0;
             private int _processedCount = 0;
-            
+
             public AsyncEnumerator(IEnumerable<Task<S>> tasks, CancellationToken cancellationToken)
             {
                 _itemReady = new SemaphoreSlim(0);

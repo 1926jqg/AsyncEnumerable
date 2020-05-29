@@ -50,9 +50,9 @@ namespace AsyncEnumerable.LINQAsync
             var current = 0;
             await foreach (var task in tasks.ReturnWhenComplete())
             {
-                
+
                 yield return task;
-                if(++current >= count)
+                if (++current >= count)
                     yield break;
             }
         }
@@ -93,7 +93,7 @@ namespace AsyncEnumerable.LINQAsync
                 TaskScheduler.Default).Unwrap())
                 .ReturnWhenComplete();
         }
-        
+
         public static async Task<T> FirstOrDefaultAsync<T>(this IEnumerable<Task<T>> tasks, CancellationToken cancellationToken = default)
         {
             var enumerator = tasks.ReturnWhenComplete().GetAsyncEnumerator(cancellationToken);

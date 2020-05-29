@@ -58,7 +58,7 @@ namespace AsyncEnumerable.Tests
             var processed = 0;
             var firstProcessedTime = -1L;
             foreach (var task in tasks)
-            {                
+            {
                 var result = await task;
                 if (firstProcessedTime < 0)
                     firstProcessedTime = watch.ElapsedMilliseconds;

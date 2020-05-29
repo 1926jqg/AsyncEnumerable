@@ -1,8 +1,5 @@
 ﻿using AsyncEnumerable.LINQAsync;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -33,7 +30,7 @@ namespace AsyncEnumerable.Tests
             var tasks = GetTasks();
 
             var processed = 0;
-            await foreach(var result in tasks.SelectAsync(t => t * 2))
+            await foreach (var result in tasks.SelectAsync(t => t * 2))
             {
                 Assert.True(result % 2 == 0);
                 processed++;
@@ -141,7 +138,7 @@ namespace AsyncEnumerable.Tests
 
             var result = await tasks.FirstOrDefaultAsync(t => t == comparison);
             watch.Stop();
-                        
+
             Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
             Assert.Equal(expected, result);
         }

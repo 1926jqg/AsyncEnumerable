@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AsyncEnumerable.LINQAsync.Models
+﻿namespace AsyncEnumerable.LINQAsync.Models
 {
     internal class PredicateResult<T>
     {
