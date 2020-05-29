@@ -88,6 +88,66 @@ namespace AsyncEnumerable.Tests
             Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public async Task TestSkipAsync(int skip)
+        {
+            int recordsToProcess = skip < 5 ? 5 - skip: 0;
+            int maxMilliseconds = 5 * millisecondMultiplier;
+            int firstProcessedTarget = (skip + 1) * millisecondMultiplier; 
+
+            var watch = Stopwatch.StartNew();
+            var tasks = GetTasks();
+
+            var processed = 0;
+            var firstProcessed = -1L;
+            await foreach (var result in tasks.SkipAsync(skip))
+            {
+                if (firstProcessed < 0)
+                    firstProcessed = watch.ElapsedMilliseconds;
+                processed++;
+            }
+            watch.Stop();
+            Assert.Equal(recordsToProcess, processed);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
+            Assert.True(firstProcessed <= firstProcessedTarget + 100);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public async Task TestSkipWhileAsync(int skip)
+        {
+            int recordsToProcess = skip < 5 ? 5 - skip : 0;
+            int maxMilliseconds = 5 * millisecondMultiplier;
+            int firstProcessedTarget = (skip + 1) * millisecondMultiplier;
+
+            var watch = Stopwatch.StartNew();
+            var tasks = GetTasks();
+
+            var processed = 0;
+            var firstProcessed = -1L;
+            await foreach (var result in tasks.SkipWhileAsync(t => t <= skip))
+            {
+                if (firstProcessed < 0)
+                    firstProcessed = watch.ElapsedMilliseconds;
+                processed++;
+            }
+            watch.Stop();
+            Assert.Equal(recordsToProcess, processed);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
+            Assert.True(firstProcessed <= firstProcessedTarget + 100);
+        }
+
         [Fact]
         public async Task TestFirstOrDefault()
         {

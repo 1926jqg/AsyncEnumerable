@@ -57,6 +57,37 @@ namespace AsyncEnumerable.LINQAsync
             }
         }
 
+        public static async IAsyncEnumerable<T> SkipAsync<T>(
+            this IEnumerable<Task<T>> tasks,
+            int count,
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken = default)
+        {
+            var current = 0;
+            await foreach (var task in tasks.ReturnWhenComplete())
+            {
+                if (current++ < count)
+                    continue;
+                yield return task;                
+            }
+        }
+        public static async IAsyncEnumerable<T> SkipWhileAsync<T>(
+            this IEnumerable<Task<T>> tasks,
+            Func<T, bool> predicate,
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken = default)
+        {
+            var skip = true;
+
+            await foreach (var task in tasks.ReturnWhenComplete())
+            {
+                if (skip && !predicate(task))
+                    skip = false;
+                if (!skip)
+                    yield return task;
+            }
+        }
+
         public static async IAsyncEnumerable<T> TakeWhileAsync<T>(
             this IEnumerable<Task<T>> tasks,
             Func<T, bool> predicate,
