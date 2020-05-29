@@ -1,7 +1,6 @@
 ﻿using AsyncEnumerable.Collections;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +10,7 @@ namespace AsyncEnumerable.LINQAsync
     public static class AsyncEnumerableExtensions
     {
         public static IAsyncEnumerable<T> ReturnWhenComplete<T>(this IEnumerable<Task<T>> tasks)
-        {
+        {            
             return new AsyncEnumerable<T>(tasks);
         }
 
@@ -93,17 +92,16 @@ namespace AsyncEnumerable.LINQAsync
             }
         }
 
-        public static IAsyncEnumerable<TResult> SelectAsync<TSource, TResult>(
+        public static async IAsyncEnumerable<TResult> SelectAsync<TSource, TResult>(
             this IEnumerable<Task<TSource>> tasks,
             Func<TSource, TResult> selector,
+            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            return tasks
-                .Select(t => t.ContinueWith(async t => selector(await t),
-                cancellationToken,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default).Unwrap())
-                .ReturnWhenComplete();
+            await foreach(var value in tasks.ReturnWhenComplete())
+            {
+                yield return selector(value);
+            }
         }
 
         public static async Task<T> FirstOrDefaultAsync<T>(this IEnumerable<Task<T>> tasks, CancellationToken cancellationToken = default)
