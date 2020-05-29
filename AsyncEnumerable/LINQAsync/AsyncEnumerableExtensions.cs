@@ -14,6 +14,40 @@ namespace AsyncEnumerable.LINQAsync
             return new AsyncEnumerable<T>(tasks);
         }
 
+        public static Task<T> Aggregate<T>(
+            this IEnumerable<Task<T>> tasks,
+            Func<T,T,T> aggregator,
+            CancellationToken cancellationToken = default)
+        {
+            return tasks.Aggregate(default, aggregator, cancellationToken);
+        }
+
+        public static Task<TAccumulate> Aggregate<TSource, TAccumulate>(
+            this IEnumerable<Task<TSource>> tasks,
+            TAccumulate seed,
+            Func<TAccumulate, TSource, TAccumulate> aggregator,
+            CancellationToken cancellationToken = default)
+        {
+            return tasks.Aggregate(seed, aggregator, t => t, cancellationToken);
+        }
+
+        public static async Task<TResult> Aggregate<TSource, TAccumulate, TResult>(
+            this IEnumerable<Task<TSource>> tasks,
+            TAccumulate seed,
+            Func<TAccumulate, TSource, TAccumulate> aggregator,
+            Func<TAccumulate, TResult> resultSelector,
+            CancellationToken cancellationToken = default)
+        {
+            TAccumulate returnVal = seed;
+            await foreach (var value in tasks.ReturnWhenComplete())
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+                returnVal = aggregator(returnVal, value);
+            }
+            return resultSelector(returnVal);
+        }
+
         public static async IAsyncEnumerable<T> WhereAsync<T>(
             this IEnumerable<Task<T>> tasks,
             Func<T, bool> predicate,
@@ -22,6 +56,8 @@ namespace AsyncEnumerable.LINQAsync
         {
             await foreach (var task in tasks.ReturnWhenComplete())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
                 if (predicate(task))
                     yield return task;
             }
@@ -39,7 +75,8 @@ namespace AsyncEnumerable.LINQAsync
             var current = 0;
             await foreach (var task in tasks.ReturnWhenComplete())
             {
-
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
                 yield return task;
                 if (++current >= count)
                     yield break;
@@ -55,6 +92,8 @@ namespace AsyncEnumerable.LINQAsync
             var current = 0;
             await foreach (var task in tasks.ReturnWhenComplete())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
                 if (current++ < count)
                     continue;
                 yield return task;                
@@ -70,6 +109,8 @@ namespace AsyncEnumerable.LINQAsync
 
             await foreach (var task in tasks.ReturnWhenComplete())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
                 if (skip && !predicate(task))
                     skip = false;
                 if (!skip)
@@ -85,6 +126,8 @@ namespace AsyncEnumerable.LINQAsync
         {
             await foreach (var value in tasks.ReturnWhenComplete())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
                 if (predicate(value))
                     yield return value;
                 else
@@ -100,6 +143,8 @@ namespace AsyncEnumerable.LINQAsync
         {
             await foreach(var value in tasks.ReturnWhenComplete())
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
                 yield return selector(value);
             }
         }
