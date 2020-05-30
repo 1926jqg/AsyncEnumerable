@@ -1,5 +1,6 @@
 ﻿using AsyncEnumerable.LINQAsync;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -7,8 +8,8 @@ namespace AsyncEnumerable.Tests
 {
     public class LinqTests
     {
-
         private const int millisecondMultiplier = 100;
+        private const int errorMargin = 50;
 
         private Task<int>[] GetTasks()
         {
@@ -30,18 +31,24 @@ namespace AsyncEnumerable.Tests
             var tasks = GetTasks();
 
             var processed = 0;
-            await foreach (var result in tasks.SelectAsync(t => t * 2))
+            await foreach (var result in tasks.ReturnWhenComplete().SelectAsync(t => t * 2))
             {
                 Assert.True(result % 2 == 0);
                 processed++;
             }
             watch.Stop();
             Assert.Equal(5, processed);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
         }
 
-        [Fact]
-        public async Task TestWhereAsync()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]        
+        public async Task TestWhereAsync(int query)
         {
             int maxMilliseconds = 5 * millisecondMultiplier;
 
@@ -50,16 +57,16 @@ namespace AsyncEnumerable.Tests
 
             var processed = 0;
             var lastTrue = 0L;
-            await foreach (var result in tasks.WhereAsync(t => t <= 3))
+            await foreach (var result in tasks.ReturnWhenComplete().WhereAsync(t => t <= query))
             {
-                Assert.True(result <= 3);
+                Assert.True(result <= query);
                 processed++;
                 lastTrue = watch.ElapsedMilliseconds;
             }
             watch.Stop();
-            Assert.Equal(3, processed);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
-            Assert.True(lastTrue <= 3 * millisecondMultiplier + 100);
+            Assert.Equal(query, processed);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
+            Assert.True(lastTrue <= query * millisecondMultiplier + errorMargin);
         }
 
         [Theory]
@@ -78,14 +85,14 @@ namespace AsyncEnumerable.Tests
             var tasks = GetTasks();
 
             var processed = 0;
-            await foreach (var result in tasks.TakeAsync(take))
+            await foreach (var result in tasks.ReturnWhenComplete().TakeAsync(take))
             {
                 Assert.True(result <= take);
                 processed++;
             }
             watch.Stop();
             Assert.Equal(take < 5 ? take : 5, processed);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
         }
 
         [Theory]
@@ -106,7 +113,7 @@ namespace AsyncEnumerable.Tests
 
             var processed = 0;
             var firstProcessed = -1L;
-            await foreach (var result in tasks.SkipAsync(skip))
+            await foreach (var result in tasks.ReturnWhenComplete().SkipAsync(skip))
             {
                 if (firstProcessed < 0)
                     firstProcessed = watch.ElapsedMilliseconds;
@@ -114,8 +121,8 @@ namespace AsyncEnumerable.Tests
             }
             watch.Stop();
             Assert.Equal(recordsToProcess, processed);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
-            Assert.True(firstProcessed <= firstProcessedTarget + 100);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
+            Assert.True(firstProcessed <= firstProcessedTarget + errorMargin);
         }
 
         [Theory]
@@ -136,7 +143,7 @@ namespace AsyncEnumerable.Tests
 
             var processed = 0;
             var firstProcessed = -1L;
-            await foreach (var result in tasks.SkipWhileAsync(t => t <= skip))
+            await foreach (var result in tasks.ReturnWhenComplete().SkipWhileAsync(t => t <= skip))
             {
                 if (firstProcessed < 0)
                     firstProcessed = watch.ElapsedMilliseconds;
@@ -144,8 +151,8 @@ namespace AsyncEnumerable.Tests
             }
             watch.Stop();
             Assert.Equal(recordsToProcess, processed);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
-            Assert.True(firstProcessed <= firstProcessedTarget + 100);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
+            Assert.True(firstProcessed <= firstProcessedTarget + errorMargin);
         }
 
         [Fact]
@@ -159,7 +166,7 @@ namespace AsyncEnumerable.Tests
             var result = await tasks.FirstOrDefaultAsync();
             watch.Stop();
             Assert.Equal(1, result);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
         }
 
         [Fact]
@@ -196,33 +203,115 @@ namespace AsyncEnumerable.Tests
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
 
-            var result = await tasks.FirstOrDefaultAsync(t => t == comparison);
+            var result = await tasks.ReturnWhenComplete().FirstOrDefaultAsync(t => t == comparison);
             watch.Stop();
 
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
             Assert.Equal(expected, result);
         }
 
-        [Fact]
-        public async Task TestTakeWhileAsync()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        public async Task TestTakeWhileAsync(int take)
         {
-            int maxMilliseconds = 4 * millisecondMultiplier;
+            int maxMilliseconds = (take + 1) * millisecondMultiplier;
+            int recordsToProcess = take < 5 ? take : 5;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
 
             var processed = 0;
             var lastTrue = 0L;
-            await foreach (var result in tasks.TakeWhileAsync(t => t <= 3))
+            await foreach (var result in tasks.ReturnWhenComplete().TakeWhileAsync(t => t <= take))
             {
-                Assert.True(result <= 3);
+                Assert.True(result <= take);
                 processed++;
                 lastTrue = watch.ElapsedMilliseconds;
             }
             watch.Stop();
-            Assert.Equal(3, processed);
-            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + 100);
-            Assert.True(lastTrue <= 3 * millisecondMultiplier + 100);
+            Assert.Equal(recordsToProcess, processed);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
+            Assert.True(lastTrue <= take * millisecondMultiplier + errorMargin);
+        }
+
+        [Fact]
+        public async Task TestAggregate()
+        {
+            int maxMilliseconds = 5 * millisecondMultiplier;
+            var watch = Stopwatch.StartNew();
+            var result = await GetTasks()
+                .ReturnWhenComplete()
+                .AggregateAsync((x, y) => x + y);
+            watch.Stop();
+            Assert.Equal(15, result);
+            Assert.True(watch.ElapsedMilliseconds <= maxMilliseconds + errorMargin);
+        }
+
+        [Fact]
+        public async Task TestChainSkipTake()
+        {
+            var result = await GetTasks()
+                .ReturnWhenComplete()
+                .SkipAsync(1)
+                .TakeAsync(2)
+                .ToListAsync();
+            Assert.DoesNotContain(1, result);
+            Assert.Contains(2, result);
+            Assert.Contains(3, result);
+            Assert.DoesNotContain(4, result);
+            Assert.DoesNotContain(5, result);
+        }
+
+        [Fact]
+        public async Task TestChainTakeSkip()
+        {
+            var result = await GetTasks()
+                .ReturnWhenComplete()
+                .TakeAsync(3)
+                .SkipAsync(1)                
+                .ToListAsync();
+            Assert.DoesNotContain(1, result);
+            Assert.Contains(2, result);
+            Assert.Contains(3, result);
+            Assert.DoesNotContain(4, result);
+            Assert.DoesNotContain(5, result);
+        }
+
+        [Fact]
+        public async Task TestChainTakeSkipTake()
+        {
+            var result = await GetTasks()
+                .ReturnWhenComplete()
+                .TakeAsync(4)
+                .SkipAsync(1)
+                .TakeAsync(2)
+                .ToListAsync();
+            Assert.DoesNotContain(1, result);
+            Assert.Contains(2, result);
+            Assert.Contains(3, result);
+            Assert.DoesNotContain(4, result);
+            Assert.DoesNotContain(5, result);
+        }
+
+        [Fact]
+        public async Task TestChainSkipTakeWhile()
+        {
+            var result = await GetTasks()
+                .ReturnWhenComplete()
+                .SkipAsync(1)
+                .TakeWhileAsync(t => t <= 3)
+                .ToListAsync();
+            Assert.DoesNotContain(1, result);
+            Assert.Contains(2, result);
+            Assert.Contains(3, result);
+            Assert.DoesNotContain(4, result);
+            Assert.DoesNotContain(5, result);
         }
     }
 }

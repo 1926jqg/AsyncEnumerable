@@ -1,7 +1,6 @@
 ﻿using AsyncEnumerable.Collections;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,138 +13,162 @@ namespace AsyncEnumerable.LINQAsync
             return new AsyncEnumerable<T>(tasks);
         }
 
-        public static Task<T> Aggregate<T>(
-            this IEnumerable<Task<T>> tasks,
+        public static async Task<List<T>> ToListAsync<T>(
+            this IAsyncEnumerable<T> source,
+            CancellationToken cancellationToken = default)
+        {
+            var returnVal = new List<T>();
+            await foreach(var value in source)
+            {
+                returnVal.Add(value);
+            }
+            return returnVal;
+        }
+
+        public static Task<T> AggregateAsync<T>(
+            this IAsyncEnumerable<T> source,
             Func<T,T,T> aggregator,
             CancellationToken cancellationToken = default)
         {
-            return tasks.Aggregate(default, aggregator, cancellationToken);
+            return source.AggregateAsync(default, aggregator, cancellationToken);
         }
 
-        public static Task<TAccumulate> Aggregate<TSource, TAccumulate>(
-            this IEnumerable<Task<TSource>> tasks,
+        public static Task<TAccumulate> AggregateAsync<TSource, TAccumulate>(
+            this IAsyncEnumerable<TSource> source,
             TAccumulate seed,
             Func<TAccumulate, TSource, TAccumulate> aggregator,
             CancellationToken cancellationToken = default)
         {
-            return tasks.Aggregate(seed, aggregator, t => t, cancellationToken);
+            return source.AggregateAsync(seed, aggregator, t => t, cancellationToken);
         }
 
-        public static async Task<TResult> Aggregate<TSource, TAccumulate, TResult>(
-            this IEnumerable<Task<TSource>> tasks,
+        public static async Task<TResult> AggregateAsync<TSource, TAccumulate, TResult>(
+            this IAsyncEnumerable<TSource> source,
             TAccumulate seed,
             Func<TAccumulate, TSource, TAccumulate> aggregator,
             Func<TAccumulate, TResult> resultSelector,
             CancellationToken cancellationToken = default)
         {
             TAccumulate returnVal = seed;
-            await foreach (var value in tasks.ReturnWhenComplete())
+            await foreach (var value in source)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
                 returnVal = aggregator(returnVal, value);
             }
             return resultSelector(returnVal);
         }
 
-        public static async IAsyncEnumerable<T> WhereAsync<T>(
-            this IEnumerable<Task<T>> tasks,
+        public static IAsyncEnumerable<T> WhereAsync<T>(
+            this IAsyncEnumerable<T> source,
             Func<T, bool> predicate,
-            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            await foreach (var task in tasks.ReturnWhenComplete())
+            if(source is AsyncEnumerable<T> concreteSource)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    yield break;
-                if (predicate(task))
-                    yield return task;
+                return AsyncEnumerable<T>.WithPredicate(concreteSource, x => predicate(x.Result));
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
-        public static async IAsyncEnumerable<T> TakeAsync<T>(
-            this IEnumerable<Task<T>> tasks,
+        public static IAsyncEnumerable<T> TakeAsync<T>(
+            this IAsyncEnumerable<T> source,
             int count,
-            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
             if (count <= 0)
-                yield break;
-
-            var current = 0;
-            await foreach (var task in tasks.ReturnWhenComplete())
+                return new AsyncEnumerable<T>(new List<Task<T>>());
+            
+            if (source is AsyncEnumerable<T> concreteSource)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    yield break;
-                yield return task;
-                if (++current >= count)
-                    yield break;
+                var current = 0;
+                return AsyncEnumerable<T>.WithStopCondition(concreteSource, t =>
+                {
+                    if (t.Emit)
+                        ++current;
+                    return current >= count;
+                });
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
-        public static async IAsyncEnumerable<T> SkipAsync<T>(
-            this IEnumerable<Task<T>> tasks,
+        public static IAsyncEnumerable<T> SkipAsync<T>(
+            this IAsyncEnumerable<T> source,
             int count,
-            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
             var current = 0;
-            await foreach (var task in tasks.ReturnWhenComplete())
+            if (source is AsyncEnumerable<T> concreteSource)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    yield break;
-                if (current++ < count)
-                    continue;
-                yield return task;                
+                return AsyncEnumerable<T>.WithPredicate(concreteSource, t =>
+                {
+                    return current++ >= count;
+                });
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
-        public static async IAsyncEnumerable<T> SkipWhileAsync<T>(
-            this IEnumerable<Task<T>> tasks,
+        public static IAsyncEnumerable<T> SkipWhileAsync<T>(
+            this IAsyncEnumerable<T> source,
             Func<T, bool> predicate,
-            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            var skip = true;
-
-            await foreach (var task in tasks.ReturnWhenComplete())
+            
+            if (source is AsyncEnumerable<T> concreteSource)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    yield break;
-                if (skip && !predicate(task))
-                    skip = false;
-                if (!skip)
-                    yield return task;
+                var skip = true;
+                return AsyncEnumerable<T>.WithPredicate(concreteSource, t =>
+                {
+                    if (skip && !predicate(t.Result))
+                        skip = false;
+                    if (skip)
+                        return false;
+                    else
+                        return true;
+                });
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
-        public static async IAsyncEnumerable<T> TakeWhileAsync<T>(
-            this IEnumerable<Task<T>> tasks,
+        public static IAsyncEnumerable<T> TakeWhileAsync<T>(
+            this IAsyncEnumerable<T> source,
             Func<T, bool> predicate,
-            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            await foreach (var value in tasks.ReturnWhenComplete())
+            if (source is AsyncEnumerable<T> concreteSource)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    yield break;
-                if (predicate(value))
-                    yield return value;
-                else
-                    yield break;
+                return AsyncEnumerable<T>.WithStopConditionAndPredicate(concreteSource, t =>
+                {
+                    return t.Emit && !predicate(t.Result);
+                }, t => predicate(t.Result));
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
-        public static async IAsyncEnumerable<TResult> SelectAsync<TSource, TResult>(
-            this IEnumerable<Task<TSource>> tasks,
+        public static IAsyncEnumerable<TResult> SelectAsync<TSource, TResult>(
+            this IAsyncEnumerable<TSource> source,
             Func<TSource, TResult> selector,
-            [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
-            await foreach(var value in tasks.ReturnWhenComplete())
+            if (source is AsyncEnumerable<TSource> concreteSource)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    yield break;
-                yield return selector(value);
+                return AsyncEnumerable<TSource>.WithTransform(concreteSource, selector);
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -158,7 +181,7 @@ namespace AsyncEnumerable.LINQAsync
                 return default;
         }
 
-        public static async Task<T> FirstOrDefaultAsync<T>(this IEnumerable<Task<T>> tasks, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+        public static async Task<T> FirstOrDefaultAsync<T>(this IAsyncEnumerable<T> tasks, Func<T, bool> predicate, CancellationToken cancellationToken = default)
         {
             var enumerator = tasks.WhereAsync(predicate, cancellationToken).GetAsyncEnumerator(cancellationToken);
             if (await enumerator.MoveNextAsync())
