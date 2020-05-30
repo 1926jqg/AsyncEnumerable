@@ -9,7 +9,7 @@ namespace AsyncEnumerable.LINQAsync
     public static class AsyncEnumerableExtensions
     {
         public static IAsyncEnumerable<T> ReturnWhenComplete<T>(this IEnumerable<Task<T>> tasks)
-        {            
+        {
             return new AsyncEnumerable<T>(tasks);
         }
 
@@ -18,7 +18,7 @@ namespace AsyncEnumerable.LINQAsync
             CancellationToken cancellationToken = default)
         {
             var returnVal = new List<T>();
-            await foreach(var value in source)
+            await foreach (var value in source)
             {
                 returnVal.Add(value);
             }
@@ -27,7 +27,7 @@ namespace AsyncEnumerable.LINQAsync
 
         public static Task<T> AggregateAsync<T>(
             this IAsyncEnumerable<T> source,
-            Func<T,T,T> aggregator,
+            Func<T, T, T> aggregator,
             CancellationToken cancellationToken = default)
         {
             return source.AggregateAsync(default, aggregator, cancellationToken);
@@ -62,7 +62,7 @@ namespace AsyncEnumerable.LINQAsync
             Func<T, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            if(source is AsyncEnumerable<T> concreteSource)
+            if (source is AsyncEnumerable<T> concreteSource)
             {
                 return AsyncEnumerable<T>.WithPredicate(concreteSource, x => predicate(x.Result));
             }
@@ -79,7 +79,7 @@ namespace AsyncEnumerable.LINQAsync
         {
             if (count <= 0)
                 return new AsyncEnumerable<T>(new List<Task<T>>());
-            
+
             if (source is AsyncEnumerable<T> concreteSource)
             {
                 var current = 0;
@@ -119,7 +119,7 @@ namespace AsyncEnumerable.LINQAsync
             Func<T, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            
+
             if (source is AsyncEnumerable<T> concreteSource)
             {
                 var skip = true;

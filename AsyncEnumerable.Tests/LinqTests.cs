@@ -1,6 +1,5 @@
 ﻿using AsyncEnumerable.LINQAsync;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -47,7 +46,7 @@ namespace AsyncEnumerable.Tests
         [InlineData(2)]
         [InlineData(3)]
         [InlineData(4)]
-        [InlineData(5)]        
+        [InlineData(5)]
         public async Task TestWhereAsync(int query)
         {
             int maxMilliseconds = 5 * millisecondMultiplier;
@@ -104,9 +103,9 @@ namespace AsyncEnumerable.Tests
         [InlineData(5)]
         public async Task TestSkipAsync(int skip)
         {
-            int recordsToProcess = skip < 5 ? 5 - skip: 0;
+            int recordsToProcess = skip < 5 ? 5 - skip : 0;
             int maxMilliseconds = 5 * millisecondMultiplier;
-            int firstProcessedTarget = (skip + 1) * millisecondMultiplier; 
+            int firstProcessedTarget = (skip + 1) * millisecondMultiplier;
 
             var watch = Stopwatch.StartNew();
             var tasks = GetTasks();
@@ -274,7 +273,7 @@ namespace AsyncEnumerable.Tests
             var result = await GetTasks()
                 .ReturnWhenComplete()
                 .TakeAsync(3)
-                .SkipAsync(1)                
+                .SkipAsync(1)
                 .ToListAsync();
             Assert.DoesNotContain(1, result);
             Assert.Contains(2, result);
