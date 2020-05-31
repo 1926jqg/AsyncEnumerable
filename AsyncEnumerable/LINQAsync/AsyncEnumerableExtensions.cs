@@ -1,6 +1,7 @@
 ﻿using AsyncEnumerable.Collections;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,7 +69,20 @@ namespace AsyncEnumerable.LINQAsync
             }
             else
             {
-                throw new NotImplementedException();
+                return WhereAsyncStream(source, predicate, cancellationToken);
+            }
+        }
+
+        private static async IAsyncEnumerable<T> WhereAsyncStream<T>(
+            this IAsyncEnumerable<T> source,
+            Func<T, bool> predicate,
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken)
+        {
+            await foreach(var item in source)
+            {
+                if (predicate(item))
+                    yield return item;
             }
         }
 
@@ -90,7 +104,22 @@ namespace AsyncEnumerable.LINQAsync
             }
             else
             {
-                throw new NotImplementedException();
+                return TakeAsyncStream<T>(source, count, cancellationToken);
+            }
+        }
+
+        private static async IAsyncEnumerable<T> TakeAsyncStream<T>(
+            IAsyncEnumerable<T> source, 
+            int count,
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken)
+        {
+            var enumerator = source.GetAsyncEnumerator(cancellationToken);
+            for(int i = 0; i <= count; i++)
+            {
+                if (!await enumerator.MoveNextAsync())
+                    yield break;
+                yield return enumerator.Current;
             }
         }
 
@@ -109,9 +138,23 @@ namespace AsyncEnumerable.LINQAsync
             }
             else
             {
-                throw new NotImplementedException();
+                return SkipAsyncStream(source, count, cancellationToken);
             }
         }
+
+        private static async IAsyncEnumerable<T> SkipAsyncStream<T>(
+            IAsyncEnumerable<T> source, 
+            int count, 
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken)
+        {
+            var enumerator = source.GetAsyncEnumerator(cancellationToken);
+            for (int i = 0; i < count; i++)
+                await enumerator.MoveNextAsync();
+            while (await enumerator.MoveNextAsync())
+                yield return enumerator.Current;
+        }
+
         public static IAsyncEnumerable<T> SkipWhileAsync<T>(
             this IAsyncEnumerable<T> source,
             Func<T, bool> predicate,
@@ -133,7 +176,23 @@ namespace AsyncEnumerable.LINQAsync
             }
             else
             {
-                throw new NotImplementedException();
+                return SkipWhileAsyncStream(source, predicate, cancellationToken);
+            }
+        }
+
+        private static async IAsyncEnumerable<T> SkipWhileAsyncStream<T>(
+            IAsyncEnumerable<T> source, 
+            Func<T, bool> predicate, 
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken)
+        {
+            bool skip = true;
+            await foreach(var item in source)
+            {
+                if (skip && !predicate(item))
+                    skip = false;
+                if (!skip)
+                    yield return item;
             }
         }
 
@@ -151,7 +210,21 @@ namespace AsyncEnumerable.LINQAsync
             }
             else
             {
-                throw new NotImplementedException();
+                return TakeWhileAsyncStream(source, predicate, cancellationToken);
+            }
+        }
+
+        private static async IAsyncEnumerable<T> TakeWhileAsyncStream<T>(
+            IAsyncEnumerable<T> source, 
+            Func<T, bool> predicate,
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken)
+        {
+            await foreach(var item in source)
+            {
+                if (!predicate(item))
+                    yield break;
+                yield return item;
             }
         }
 
@@ -166,7 +239,19 @@ namespace AsyncEnumerable.LINQAsync
             }
             else
             {
-                throw new NotImplementedException();
+                return TakeWhileAsyncStream(source, selector, cancellationToken);
+            }
+        }
+
+        private static async IAsyncEnumerable<TResult> TakeWhileAsyncStream<TSource, TResult>(
+            IAsyncEnumerable<TSource> source, 
+            Func<TSource, TResult> selector,
+            [EnumeratorCancellation]
+            CancellationToken cancellationToken)
+        {
+            await foreach(var item in source)
+            {
+                yield return selector(item);
             }
         }
 

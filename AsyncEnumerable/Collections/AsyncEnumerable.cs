@@ -41,7 +41,7 @@ namespace AsyncEnumerable.Collections
                         return result;
                     return new AsyncEnumerableTaskResult<T>
                     {
-                        Emit = result.Emit && predicate(result),
+                        Emit = predicate(result),
                         Result = result.Result,
                         Stop = result.Stop
                     };

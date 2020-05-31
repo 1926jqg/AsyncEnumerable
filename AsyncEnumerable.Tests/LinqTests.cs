@@ -312,5 +312,20 @@ namespace AsyncEnumerable.Tests
             Assert.DoesNotContain(4, result);
             Assert.DoesNotContain(5, result);
         }
+
+        [Fact]
+        public async Task TestChainWhereSelect()
+        {
+            var result = await GetTasks()
+                .ReturnWhenComplete()
+                .WhereAsync(s => s <= 3)
+                .SelectAsync(s => s*2)
+                .ToListAsync();
+            Assert.Contains(2, result);
+            Assert.Contains(4, result);
+            Assert.Contains(6, result);
+            Assert.DoesNotContain(8, result);
+            Assert.DoesNotContain(10, result);
+        }
     }
 }
