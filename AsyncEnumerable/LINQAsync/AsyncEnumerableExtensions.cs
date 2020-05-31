@@ -85,9 +85,7 @@ namespace AsyncEnumerable.LINQAsync
                 var current = 0;
                 return AsyncEnumerable<T>.WithStopCondition(concreteSource, t =>
                 {
-                    if (t.Emit)
-                        ++current;
-                    return current >= count;
+                    return ++current >= count;
                 });
             }
             else
@@ -148,7 +146,7 @@ namespace AsyncEnumerable.LINQAsync
             {
                 return AsyncEnumerable<T>.WithStopConditionAndPredicate(concreteSource, t =>
                 {
-                    return t.Emit && !predicate(t.Result);
+                    return !predicate(t.Result);
                 }, t => predicate(t.Result));
             }
             else

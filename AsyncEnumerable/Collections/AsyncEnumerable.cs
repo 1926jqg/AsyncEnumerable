@@ -37,13 +37,14 @@ namespace AsyncEnumerable.Collections
                 _tasks = source._tasks.Select(task => task.ContinueWith(async t =>
                 {
                     var result = await t;
-                    var returnVal = new AsyncEnumerableTaskResult<T>
+                    if (!result.Emit)
+                        return result;
+                    return new AsyncEnumerableTaskResult<T>
                     {
                         Emit = result.Emit && predicate(result),
                         Result = result.Result,
                         Stop = result.Stop
                     };
-                    return returnVal;
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
@@ -58,13 +59,14 @@ namespace AsyncEnumerable.Collections
                 _tasks = source._tasks.Select(task => task.ContinueWith(async t =>
                 {
                     var result = await t;
-                    var returnVal = new AsyncEnumerableTaskResult<T>
+                    if (!result.Emit)
+                        return result;
+                    return new AsyncEnumerableTaskResult<T>
                     {
                         Emit = result.Emit,
                         Result = result.Result,
                         Stop = result.Stop || stopCondition(result)
                     };
-                    return returnVal;
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
@@ -79,13 +81,19 @@ namespace AsyncEnumerable.Collections
                 _tasks = source._tasks.Select(task => task.ContinueWith(async t =>
                 {
                     var result = await t;
-                    var returnVal = new AsyncEnumerableTaskResult<TResult>
+                    if (!result.Emit)
+                        return new AsyncEnumerableTaskResult<TResult>
+                        {
+                            Emit = result.Emit,
+                            Result = default,
+                            Stop = result.Stop
+                        };
+                    return new AsyncEnumerableTaskResult<TResult>
                     {
                         Emit = result.Emit,
                         Result = transform(result.Result),
                         Stop = result.Stop
                     };
-                    return returnVal;
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
